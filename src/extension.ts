@@ -1,136 +1,131 @@
-// The module 'vscode' contains the VS Code extensibility API
 import * as vscode from 'vscode';
+import { ComponentService, type ComponentInfo } from './services/componentService';
 
-// Dynamic Salt Component information with usage examples and prop types
-const SALT_COMPONENTS_INFO = {
-	Accordion: {
-		description: 'A collapsible section component that can show/hide content. Perfect for organizing content in expandable sections.',
-		props: ['source', 'expandable', 'initialExpandedIds'],
-		example: `import { Accordion, AccordionSection } from "@salt-ds/core";
-		
-<Accordion source={items} expandable>
-  {(item) => (
-    <AccordionSection title={item.title}>
-      {item.content}
-    </AccordionSection>
-  )}
-</Accordion>`
-	},
-	Avatar: {
-		description: 'A component for displaying user profile images or initials with various sizes and styles.',
-		props: ['size', 'src', 'initials', 'presence'],
-		example: `import { Avatar } from "@salt-ds/core";
-		
-<Avatar 
-  size="medium"
-  src="profile.jpg"
-  initials="JD"
-/>`
-	},
-	Button: {
-		description: 'A versatile button component supporting multiple variants and states. Used for triggering actions.',
-		props: ['variant', 'disabled', 'loading', 'size'],
-		example: `import { Button } from "@salt-ds/core";
-		
-<Button 
-  variant="primary"
-  onClick={handleClick}
-  disabled={false}
->
-  Click me
-</Button>`
-	},
-	Card: {
-		description: 'A flexible container component for grouping related content with optional header and actions.',
-		props: ['interactive', 'selected', 'accent'],
-		example: `import { Card } from "@salt-ds/core";
-		
-<Card>
-  <Card.Header>
-    <Text styleAs="h3">Card Title</Text>
-  </Card.Header>
-  <Card.Content>
-    Your content here
-  </Card.Content>
-</Card>`
-	},
-	FormField: {
-		description: 'A wrapper component that provides consistent layout and styling for form inputs.',
-		props: ['label', 'labelPlacement', 'necessity', 'validationStatus'],
-		example: `import { FormField, Input } from "@salt-ds/core";
-		
-<FormField 
-  label="Username"
-  necessity="required"
->
-  <Input value={value} onChange={handleChange} />
-</FormField>`
-	}
-};
+// Initialize ComponentService
+const componentService = ComponentService.getInstance();
 
-const handleSaltExplain = async (component: string): Promise<string> => {
-	const normalizedComponent = component.trim().toLowerCase();
-	const componentEntry = Object.entries(SALT_COMPONENTS_INFO).find(
-		([key]) => key.toLowerCase() === normalizedComponent
-	);
+async function handleSaltExplain(component: string): Promise<string> {
+    const normalizedComponent = component.trim();
+    const componentName = normalizedComponent.charAt(0).toUpperCase() + normalizedComponent.slice(1);
+    
+    const info = await componentService.getComponentInfo(componentName);
+    
+    if (info) {
+        let response = `## ${componentName}\n\n${info.description}\n`;
+        
+        if (info.props.length > 0) {
+            response += '\n### Key Props\n';
+            response += info.props.map(prop => `- \`${prop}\``).join('\n');
+        }
+        
+        response += '\n\n### Usage Example:\n```tsx\n' + info.example + '\n```\n';
+        
+        if (info.documentation) {
+            response += '\n### Additional Documentation\n' + info.documentation;
+        }
+        
+        response += '\n\nFor more details, visit the [Salt Design System documentation](https://saltdesignsystem.com/components/${componentName.toLowerCase()}).';
+        
+        return response;
+    }
 
-	if (componentEntry) {
-		const [name, info] = componentEntry;
-		return `## ${name}
+    // Fallback message with available components
+    const availableComponents = componentService.getAvailableComponents();
+    return `I couldn't find specific information about "${component}".${
+        availableComponents.length ? `\n\nAvailable components: ${availableComponents.join(', ')}.` : ''
+    }
 
-${info.description}
-
-### Key Props
-${info.props.map(prop => `- \`${prop}\``).join('\n')}
-
-### Usage Example:
-\`\`\`tsx
-${info.example}
-\`\`\`
-
-For more details, visit the [Salt Design System documentation](https://saltdesignsystem.com).`;
-	}
-
-	return `I couldn't find specific information about "${component}". Available components: ${Object.keys(SALT_COMPONENTS_INFO).join(', ')}.
-
-You can also ask about:
+You can ask about:
+- Specific components and their usage
 - Theming with SaltProvider
 - Icons from @salt-ds/icons
-- Layout components like StackLayout
-- Form components like Input and Checkbox`;
-};
+- Layout components and patterns
+- Form components and validation`;
+}
 
 // This method is called when your extension is activated
 export function activate(context: vscode.ExtensionContext) {
-	console.log('🧂 Salt extension is now active!');
-	vscode.window.showInformationMessage('Salt extension is now active!');
+    console.log('🧂 Salt extension is now active!');
+    vscode.window.showInformationMessage('Salt extension is now active!');
 
-	// Create the chat participant
-	const saltParticipant = vscode.chat.createChatParticipant('salt', async (request, context, stream, token) => {
-		const prompt = request.prompt.toLowerCase();
-		const componentMatch = prompt.match(/about\s+(\w+)/i) || prompt.match(/(\w+)\s+component/i);
-		
-		if (componentMatch) {
-			const response = await handleSaltExplain(componentMatch[1]);
-			await stream.markdown(response);
-			return;
-		}
+    // Create the chat participant
+    const saltParticipant = vscode.chat.createChatParticipant('salt', async (request, context, stream, token) => {
+        const prompt = request.prompt.toLowerCase();
+        console.log('Processing prompt:', prompt);
 
-		await stream.markdown(`Hello! I'm your Salt Design System assistant. You can:
-- Ask about specific components using \`@salt about <component>\`
-- Get general information about Salt Design System
-- Learn about theming and styling
+        // Enhanced pattern matching
+        const patterns = [
+            /about\s+(\w+)/i,
+            /(\w+)\s+component/i,
+            /how\s+(?:to\s+)?use\s+(\w+)/i,
+            /what\s+(?:is|are)\s+(?:the\s+)?(\w+)/i,
+            /explain\s+(\w+)/i
+        ];
 
-Available components: ${Object.keys(SALT_COMPONENTS_INFO).join(', ')}`);
-	});
+        for (const pattern of patterns) {
+            const match = prompt.match(pattern);
+            if (match) {
+                const component = match[1];
+                const response = await handleSaltExplain(component);
+                await stream.markdown(response);
+                return;
+            }
+        }
 
-	// Register the hello world command
-	const disposable = vscode.commands.registerCommand('salt.helloWorld', () => {
-		vscode.window.showInformationMessage('Hello World from Salt!');
-	});
+        // Handle theme-related queries
+        if (prompt.includes('theme') || prompt.includes('styling')) {
+            await stream.markdown(`## Salt Design System Theming
 
-	// Add our disposables to the extension context
-	context.subscriptions.push(disposable, saltParticipant);
+The Salt Design System uses a theme provider to manage consistent styling across components.
+
+\`\`\`tsx
+import { SaltProvider } from "@salt-ds/core";
+
+function App() {
+  return (
+    <SaltProvider mode="light"> // or "dark"
+      <YourComponents />
+    </SaltProvider>
+  );
+}
+\`\`\`
+
+You can:
+- Switch between light and dark modes
+- Customize theme tokens
+- Use CSS custom properties
+- Apply component-specific styles
+
+Would you like to know more about a specific theming aspect?`);
+            return;
+        }
+
+        // Default welcome message
+        const availableComponents = componentService.getAvailableComponents();
+        await stream.markdown(`Hello! I'm your Salt Design System assistant. I can help you with:
+
+1. Component Information
+   - Usage examples
+   - Props and API
+   - Best practices
+
+2. Theming & Styling
+   - Light/Dark modes
+   - Custom themes
+   - CSS utilities
+
+3. Integration Help
+   - Setup guides
+   - Common patterns
+   - Troubleshooting
+
+Just ask me about a specific component or topic! ${
+    availableComponents.length ? `\n\nAvailable components: ${availableComponents.join(', ')}` : ''
+}`);
+    });
+
+    // Add our disposable to the extension context
+    context.subscriptions.push(saltParticipant);
 }
 
 // This method is called when your extension is deactivated

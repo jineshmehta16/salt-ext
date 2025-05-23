@@ -17,27 +17,15 @@
   ],
   "main": "./dist/extension.js",
   "contributes": {
-    "commands": [
+    "chatParticipants": [
       {
-        "command": "salt.helloWorld",
-        "title": "Hello World"
+        "id": "salt",
+        "name": "salt",
+        "fullName": "Salt Design System",
+        "description": "Get help with Salt Design System components and features",
+        "isSticky": true
       }
-    ],
-    "chat": {
-      "participants": [
-        {
-          "id": "salt",
-          "name": "salt",
-          "description": "Get help with Salt Design System components and features",
-          "commands": [
-            {
-              "name": "explain",
-              "description": "Get detailed explanation about Salt components, themes, or features"
-            }
-          ]
-        }
-      ]
-    }
+    ]
   },
   "scripts": {
     "vscode:prepublish": "npm run package",
@@ -69,6 +57,7 @@
     "typescript": "^5.8.3"
   },
   "dependencies": {
+    "@octokit/rest": "^21.1.1",
     "@salt-ds/core": "^1.46.0",
     "@salt-ds/icons": "^1.13.2",
     "@salt-ds/theme": "^1.29.0"
