@@ -15,7 +15,7 @@
 			"outFiles": [
 				"${workspaceFolder}/dist/**/*.js"
 			],
-			"preLaunchTask": "${defaultBuildTask}",
+			"preLaunchTask": "watch",
 			"sourceMaps": true,
 			"resolveSourceMapLocations": [
 				"${workspaceFolder}/**",
@@ -28,13 +28,13 @@
 			"request": "launch",
 			"args": [
 				"--extensionDevelopmentPath=${workspaceFolder}",
-				"--extensionTestsPath=${workspaceFolder}/out/test"
+				"--extensionTestsPath=${workspaceFolder}/out/test/suite/index"
 			],
 			"outFiles": [
-				"${workspaceFolder}/out/test/**/*.js"
+				"${workspaceFolder}/out/**/*.js",
+				"${workspaceFolder}/dist/**/*.js"
 			],
-			"preLaunchTask": "npm: pretest"
+			"preLaunchTask": "watch"
 		}
-	],
-	"compounds": []
+	]
 }
