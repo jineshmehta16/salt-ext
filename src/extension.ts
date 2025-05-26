@@ -89,66 +89,77 @@ function processMessage(input: string | vscode.MarkdownString): string {
 }
 
 export function activate(context: vscode.ExtensionContext) {
-    console.log('🧂 Salt extension is now active!');
-    vscode.window.showInformationMessage('Salt Design System Assistant is ready!');
-    
-    const saltParticipant = vscode.chat.createChatParticipant('salt', async (request, context, stream) => {
-        try {
-            console.log('Received query:', request.prompt);
-            await stream.progress('Analyzing your Salt Design System question...');
+    try {
+        console.log('🧂 Salt extension is now active!');
+        
+        // Check if chat API is available
+        if (!vscode.chat) {
+            throw new Error('VS Code Chat API is not available. Please update to VS Code version 1.99.0 or higher.');
+        }
+        
+        vscode.window.showInformationMessage('Salt Design System Assistant is ready!');
+        
+        const saltParticipant = vscode.chat.createChatParticipant('salt', async (request, context, stream) => {
+            try {
+                console.log('Received query:', request.prompt);
+                await stream.progress('Analyzing your Salt Design System question...');
 
-            const messages = [];
-            
-            // Only add SALT_CONTEXT if this is the first message
-            if (context.history.length === 0) {
-                console.log('First message in conversation, adding Salt context');
-                messages.push(vscode.LanguageModelChatMessage.User(SALT_CONTEXT.contextPrompt));
-            }
+                const messages = [];
+                
+                // Only add SALT_CONTEXT if this is the first message
+                if (context.history.length === 0) {
+                    console.log('First message in conversation, adding Salt context');
+                    messages.push(vscode.LanguageModelChatMessage.User(SALT_CONTEXT.contextPrompt));
+                }
 
-            // Get last 5 messages and summarize older ones if they exist
-            const recentHistory = getLastNMessages(context.history, 5);
-            const olderMessagesSummary = summarizeOlderMessages(context.history, context.history.length - 5);
-            
-            // Add summary of older messages if available
-            if (olderMessagesSummary) {
-                messages.push(vscode.LanguageModelChatMessage.User(`[Previous context] ${olderMessagesSummary}`));
-            }
-            
-            // Add recent history with token optimization
-            for (const turn of recentHistory) {
-                if (turn instanceof vscode.ChatRequestTurn) {
-                    // Add user's previous questions with truncation
-                    messages.push(vscode.LanguageModelChatMessage.User(processMessage(turn.prompt)));
-                } else if (turn instanceof vscode.ChatResponseTurn) {
-                    // Add AI's previous responses with truncation
-                    const responseText = turn.response
-                        .filter(part => part instanceof vscode.ChatResponseMarkdownPart)
-                        .map(part => processMessage((part as vscode.ChatResponseMarkdownPart).value))
-                        .join(' '); // Add space between parts
-                    if (responseText) {
-                        messages.push(vscode.LanguageModelChatMessage.Assistant(responseText));
+                // Get last 5 messages and summarize older ones if they exist
+                const recentHistory = getLastNMessages(context.history, 5);
+                const olderMessagesSummary = summarizeOlderMessages(context.history, context.history.length - 5);
+                
+                // Add summary of older messages if available
+                if (olderMessagesSummary) {
+                    messages.push(vscode.LanguageModelChatMessage.User(`[Previous context] ${olderMessagesSummary}`));
+                }
+                
+                // Add recent history with token optimization
+                for (const turn of recentHistory) {
+                    if (turn instanceof vscode.ChatRequestTurn) {
+                        // Add user's previous questions with truncation
+                        messages.push(vscode.LanguageModelChatMessage.User(processMessage(turn.prompt)));
+                    } else if (turn instanceof vscode.ChatResponseTurn) {
+                        // Add AI's previous responses with truncation
+                        const responseText = turn.response
+                            .filter(part => part instanceof vscode.ChatResponseMarkdownPart)
+                            .map(part => processMessage((part as vscode.ChatResponseMarkdownPart).value))
+                            .join(' '); // Add space between parts
+                        if (responseText) {
+                            messages.push(vscode.LanguageModelChatMessage.Assistant(responseText));
+                        }
                     }
                 }
+
+                // Add current question (no truncation for current question)
+                messages.push(vscode.LanguageModelChatMessage.User(request.prompt));
+
+                // Get response from the AI model
+                const response = await request.model.sendRequest(messages);
+
+                // Stream the response to the user
+                for await (const part of response.text) {
+                    await stream.markdown(part);
+                }
+                
+            } catch (error) {
+                console.error('Error handling query:', error);
+                await stream.markdown('Sorry, I encountered an error. Please try again.');
             }
+        });
 
-            // Add current question (no truncation for current question)
-            messages.push(vscode.LanguageModelChatMessage.User(request.prompt));
-
-            // Get response from the AI model
-            const response = await request.model.sendRequest(messages);
-
-            // Stream the response to the user
-            for await (const part of response.text) {
-                await stream.markdown(part);
-            }
-            
-        } catch (error) {
-            console.error('Error handling query:', error);
-            await stream.markdown('Sorry, I encountered an error. Please try again.');
-        }
-    });
-
-    context.subscriptions.push(saltParticipant);
+        context.subscriptions.push(saltParticipant);
+    } catch (error) {
+        console.error('Error activating extension:', error);
+        vscode.window.showErrorMessage(`Salt extension activation failed: ${error.message}`);
+    }
 }
 
 export function deactivate() {}
