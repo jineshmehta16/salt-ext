@@ -64,6 +64,39 @@ To run this extension in development mode:
 
 The extension will open in a new VS Code window where you can test it.
 
+## Building and Packaging
+
+To build and package the extension for distribution:
+
+1. Create a production build:
+   ```bash
+   npm run package
+   ```
+   This command:
+   - Runs the production build using esbuild
+   - Optimizes and minifies the code
+   - Generates the distribution files in the `dist` folder
+
+2. Create the VSIX package:
+   ```bash
+   npx vsce package
+   ```
+   This command:
+   - Creates a `.vsix` package file
+   - Includes all necessary files for distribution
+   - Validates the extension manifest
+   - Generates a package ready for installation or publishing
+
+You can combine both steps using:
+```bash
+npm run package && npx vsce package
+```
+
+The resulting `.vsix` file can be:
+- Installed locally through VS Code
+- Published to the VS Code Marketplace
+- Shared with other developers
+
 ## Requirements
 
 - Visual Studio Code version 1.100.0 or higher
