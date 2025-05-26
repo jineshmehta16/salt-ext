@@ -20,7 +20,7 @@
   ],
   "license": "MIT",
   "engines": {
-    "vscode": "^1.100.0"
+    "vscode": "^1.99.0"
   },
   "categories": [
     "Other"
@@ -52,7 +52,7 @@
   },
   "devDependencies": {
     "@types/node": "20.x",
-    "@types/vscode": "^1.100.0",
+    "@types/vscode": "^1.99.0",
     "@typescript-eslint/eslint-plugin": "^8.31.1",
     "@typescript-eslint/parser": "^8.31.1",
     "esbuild": "^0.25.3",
