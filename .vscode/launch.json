@@ -5,6 +5,7 @@
 {
 	"version": "0.2.0",
 	"configurations": [
+		
 		{
 			"name": "Run Extension",
 			"type": "extensionHost",
@@ -13,9 +14,10 @@
 				"--extensionDevelopmentPath=${workspaceFolder}"
 			],
 			"outFiles": [
-				"${workspaceFolder}/dist/**/*.js"
+				"${workspaceFolder}/dist/**/*.js",
+				"${workspaceFolder}/out/**/*.js"
 			],
-			"preLaunchTask": "watch",
+			"preLaunchTask": "npm: compile",
 			"sourceMaps": true,
 			"resolveSourceMapLocations": [
 				"${workspaceFolder}/**",

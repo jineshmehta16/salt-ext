@@ -1,22 +1,40 @@
 // See https://go.microsoft.com/fwlink/?LinkId=733558
 // for the documentation about the tasks.json format
 {
-	"version": "2.0.0",
-	"tasks": [
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "npm: compile",
+            "type": "shell",
+            "command": "npm",
+            "args": ["run", "compile"],
+            "problemMatcher": ["$tsc", "$eslint-stylish"],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+		{
+			"type": "npm",
+			"script": "compile",
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
+			"problemMatcher": ["$tsc", "$esbuild"],
+			"label": "npm: compile"
+		},
 		{
             "label": "watch",
             "dependsOn": [
-                "npm: watch:esbuild"
+                "npm: watch:esbuild",
+                "npm: watch:tsc"
             ],
-            "presentation": {
-                "reveal": "always",
-                "panel": "dedicated"
-            },
             "group": {
                 "kind": "build",
                 "isDefault": true
             },
-            "problemMatcher": [],
+            "problemMatcher": ["$esbuild-watch", "$tsc-watch"],
             "isBackground": true
         },
         {
@@ -27,8 +45,8 @@
             "isBackground": true,
             "label": "npm: watch:esbuild",
             "presentation": {
-                "group": "watch",
-                "reveal": "never"
+                "reveal": "silent",
+                "panel": "dedicated"
             }
         },
 		{
@@ -39,8 +57,8 @@
             "isBackground": true,
             "label": "npm: watch:tsc",
             "presentation": {
-                "group": "watch",
-                "reveal": "never"
+                "reveal": "silent",
+                "panel": "dedicated"
             }
         },
 		{
@@ -49,18 +67,10 @@
 			"problemMatcher": "$tsc-watch",
 			"isBackground": true,
 			"presentation": {
-				"reveal": "never",
-				"group": "watchers"
+				"reveal": "silent",
+				"panel": "dedicated"
 			},
 			"group": "build"
-		},
-		{
-			"label": "tasks: watch-tests",
-			"dependsOn": [
-				"npm: watch",
-				"npm: watch-tests"
-			],
-			"problemMatcher": []
 		}
 	]
 }
