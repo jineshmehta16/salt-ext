@@ -102,6 +102,12 @@ export function activate(context: vscode.ExtensionContext) {
         const saltParticipant = vscode.chat.createChatParticipant('salt', async (request, context, stream) => {
             try {
                 console.log('Received query:', request.prompt);
+                // Debug model information
+                try {
+                    console.log('Model:', request.model);
+                } catch (e) {
+                    console.error('Error logging model:', e);
+                }
                 await stream.progress('Analyzing your Salt Design System question...');
 
                 const messages = [];
@@ -141,22 +147,30 @@ export function activate(context: vscode.ExtensionContext) {
                 // Add current question (no truncation for current question)
                 messages.push(vscode.LanguageModelChatMessage.User(request.prompt));
 
-                // Get response from the AI model
-                const response = await request.model.sendRequest(messages);
+                try {
+                    console.log('Attempting to send request to model with messages:', messages);
+                    // Get response from the AI model
+                    const response = await request.model.sendRequest(messages);
+                    console.log('Got response from model:', response);
 
                 // Stream the response to the user
                 for await (const part of response.text) {
                     await stream.markdown(part);
                 }
                 
-            } catch (error) {
+            } catch (error: any) {
                 console.error('Error handling query:', error);
-                await stream.markdown('Sorry, I encountered an error. Please try again.');
+                console.error('Stack trace:', error.stack);
+                await stream.markdown('Sorry, I encountered an error. Please try again. Error: ' + error.message);
+            }
+            } catch (error: any) {
+                console.error('Error in chat participant:', error);
+                await stream.markdown('An error occurred while processing your request. Please try again later.');
             }
         });
 
         context.subscriptions.push(saltParticipant);
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error activating extension:', error);
         vscode.window.showErrorMessage(`Salt extension activation failed: ${error.message}`);
     }
